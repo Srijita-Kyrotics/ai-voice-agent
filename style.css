@@ -45,6 +45,7 @@ header {
     font-weight: 700;
     background: linear-gradient(135deg, #818cf8, #c084fc);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
 }
@@ -127,8 +128,35 @@ header {
 
 .controls {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
     padding: 1rem;
+}
+
+.secondary-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.text-button {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.text-button:hover {
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
 }
 
 .mic-button {

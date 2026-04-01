@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const micBtn = document.getElementById('mic-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const statusText = document.getElementById('status-text');
     const recordingIndicator = document.getElementById('recording-indicator');
     const conversationLog = document.getElementById('conversation-log');
@@ -7,14 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let isRecording = false;
     let recognition;
+    let conversationHistory = []; // Conversational Memory
 
     // Initialize Speech Recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.interimResults = true; // Low-latency feedback
         recognition.lang = 'en-US';
+
+        let finalTranscript = '';
 
         recognition.onstart = () => {
             isRecording = true;
@@ -22,25 +26,47 @@ document.addEventListener('DOMContentLoaded', () => {
             statusText.textContent = "Listening...";
             recordingIndicator.classList.remove('hidden');
             visualizer.classList.remove('hidden');
+            finalTranscript = '';
+            
+            // Interrupt AI if it's speaking
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
         };
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            addMessage(transcript, 'user');
-            handleAIResponse(transcript);
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            // Fast visual feedback
+            if (interimTranscript) {
+                statusText.textContent = interimTranscript;
+            }
         };
 
         recognition.onerror = (event) => {
             console.error(event.error);
-            statusText.textContent = "Error: " + event.error;
+            if (event.error !== 'no-speech') {
+                statusText.textContent = "Error: " + event.error;
+            }
             stopRecording();
         };
 
         recognition.onend = () => {
             stopRecording();
+            if (finalTranscript.trim()) {
+                addMessage(finalTranscript, 'user');
+                handleAIResponse(finalTranscript);
+            }
         };
     } else {
-        statusText.textContent = "Speech recognition not supported in this browser.";
+        statusText.textContent = "Speech recognition not supported.";
         micBtn.disabled = true;
     }
 
@@ -51,6 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             recognition.start();
         }
+    });
+
+    // Clear Memory
+    clearBtn.addEventListener('click', () => {
+        conversationHistory = [];
+        conversationLog.innerHTML = '<div class="message system">Memory cleared. I\'m ready to start fresh!</div>';
+        addMessage("Memory cleared.", 'system');
     });
 
     function stopRecording() {
@@ -75,35 +108,51 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleAIResponse(userText) {
         statusText.textContent = "Thinking...";
         
-        // Mocking AI delay
+        // Add to history
+        conversationHistory.push({ role: 'user', content: userText });
+
+        // Simulate Low-latency response processing
         setTimeout(async () => {
-            // Replace this with actual LLM API call
-            const aiText = generateMockResponse(userText);
+            const aiText = generateContextualResponse(userText);
+            
+            // Add to history
+            conversationHistory.push({ role: 'assistant', content: aiText });
+            
             addMessage(aiText, 'ai');
             speak(aiText);
             statusText.textContent = "Ready";
-        }, 800);
+        }, 400); // Faster processing time for low-latency feel
     }
 
-    function generateMockResponse(text) {
+    function generateContextualResponse(text) {
         const lowerText = text.toLowerCase();
-        if (lowerText.includes('hello')) return "Hello there! I am your voice-enabled AI companion. How can I help you today?";
-        if (lowerText.includes('time')) return "The current time is " + new Date().toLocaleTimeString();
-        if (lowerText.includes('who are you')) return "I am a conversational AI agent designed to interact with you via speech.";
-        return "I heard you say: '" + text + "'. That's very interesting!";
+        
+        // Basic memory check
+        const namesInHistory = conversationHistory.filter(m => m.role === 'user' && m.content.toLowerCase().includes('my name is'));
+        
+        if (lowerText.includes('what is my name')) {
+            if (namesInHistory.length > 0) {
+                const lastEntry = namesInHistory[namesInHistory.length - 1].content;
+                const match = lastEntry.match(/my name is (.*)/i);
+                if (match) return `Your name is ${match[1]}, as you told me earlier!`;
+            }
+            return "I'm sorry, I don't remember your name yet. Could you tell me?";
+        }
+
+        if (lowerText.includes('hello')) return "Hi again! I remember our previous messages. How can I help further?";
+        if (lowerText.includes('time')) return "It is currently " + new Date().toLocaleTimeString();
+        
+        return "I'm keeping track of our conversation. You said: '" + text + "'. I have " + conversationHistory.length + " messages in my memory.";
     }
 
     function speak(text) {
         if ('speechSynthesis' in window) {
-            // Cancel current speaking
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1;
+            utterance.rate = 1.1; // Slightly faster for lower "perceived" latency
             utterance.pitch = 1;
-            utterance.volume = 1;
             
-            // Try to find a nice premium voice
             const voices = window.speechSynthesis.getVoices();
             const premiumVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Natural'));
             if (premiumVoice) utterance.voice = premiumVoice;
