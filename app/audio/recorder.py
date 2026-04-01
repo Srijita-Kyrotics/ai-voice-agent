@@ -60,6 +60,25 @@ class AudioRecorder:
             
         return np.concatenate(audio_chunks, axis=0)
 
+    def is_speech_ongoing(self, threshold=None, duration=0.5):
+        """Check if there's ongoing speech (useful for interrupts)."""
+        threshold = threshold or settings.SILENCE_THRESHOLD
+        
+        energy = []
+        def callback(indata, frames, time, status):
+            energy.append(np.linalg.norm(indata) * 10 / frames)
+
+        try:
+            with sd.InputStream(samplerate=self.sample_rate, 
+                                channels=self.channels, 
+                                callback=callback):
+                sd.sleep(int(duration * 1000))
+        except Exception:
+            return False
+            
+        if not energy: return False
+        return np.mean(energy) > threshold
+
     def save_wav(self, data, filename="input.wav"):
         if data is None or len(data) == 0:
             return None

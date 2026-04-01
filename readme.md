@@ -1,91 +1,59 @@
-# Intelligent Conversational Voice AI Agent
+# AI Interview Assistant: Intelligent Voice Agent
 
-A production-grade, state-aware Speech-to-Speech (S2S) AI agent built with a modular, scalable architecture. Unlike basic linear pipelines, this system behaves as a true autonomous agent with state management and conversational intelligence.
+A specialized, purpose-driven AI agent designed to help professionals practice job interviews through natural voice interaction. Unlike basic voice pipelines, this agent uses a **THINK → DECIDE → ACT** loop to provide a realistic and intelligent mock interview experience.
 
-## 🧠 System Architecture
+## 🎯 Problem Statement
+Preparing for interviews often lacks real-time, bidirectional vocal practice. This agent solves that by acting as a professional interviewer that asks behavioral questions, evaluates responses, and provides immediate feedback.
 
-The heart of the system is a **State-Machine Controller** that manages the agent's lifecycle across various states:
+## 🧠 Agent Architecture (THINK → DECIDE → ACT)
+
+This agent moves beyond simple "record and respond" logic by implementing an intelligent decision loop:
+
+1. **THINK**: The agent analyzes transcription for intent, noise, or short inputs (VAD + Heuristics).
+2. **DECIDE**: It chooses a strategy—clarification, deep follow-up, or professional feedback—based on the current interview stage.
+3. **ACT**: It generates a speech-optimized response, synthesizes audio, and updates conversational memory.
 
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> LISTENING : Audio Energy > Threshold
-    LISTENING --> THINKING : Silence Detected (VAD)
-    THINKING --> SPEAKING : LLM Response Ready
+    IDLE --> LISTENING : Energy > Threshold
+    LISTENING --> THINKING : Silence Detected
+    THINKING --> DECIDING : Intent Analysis
+    DECIDING --> SPEAKING : Strategy Selected
     SPEAKING --> IDLE : Audio Finished
-    SPEAKING --> INTERRUPTED : User Starts Speaking
+    SPEAKING --> INTERRUPTED : User Cut-in Detected
     INTERRUPTED --> LISTENING
-    ERROR --> IDLE : Reset
 ```
 
 ## 🚀 Advanced Features
 
-- **State-Based Control**: Explicit management of `IDLE`, `LISTENING`, `THINKING`, and `SPEAKING` cycles.
-- **Intelligent Memory**: Context-aware memory with sliding-window trimming to maintain history without unbounded growth.
-- **Voice Activity Detection (VAD)**: Energy-based detection to automatically start/stop recording.
-- **Multilingual Recognition**: Whisper-based auto-detection of spoken languages.
-- **Interrupt Handling**: (Architecture Ready) Logic to stop AI speech when user voice energy is detected.
-- **Offline First**: Fully local STT (Whisper) and TTS (Piper) for maximum privacy and low latency.
+- **Interrupt Handling**: The agent immediately stops speaking if it detects the user trying to speak, allowing for natural conversation flow.
+- **Intelligent VAD**: Energy-based detection filters out background noise and precisely captures speech.
+- **Context-Aware Memory**: Maintains a professional interview context and can provide a summary of the session.
+- **Multilingual Support**: Automatically detects the user's spoken language via Whisper.
+- **Offline First**: All speech-to-text (Whisper) and text-to-speech (Piper) processing is done locally.
 
-## 🛠️ Tech Stack
-
-- **STT**: OpenAI Whisper (Local, optimized for CUDA/CPU)
-- **LLM**: Multi-provider support (OpenAI GPT-4o / Local Llama 3 via Ollama)
-- **TTS**: Piper (Fast, local Neural Text-to-Speech)
-- **Audio Core**: SoundDevice, SciPy, NumPy
-- **Orchestration**: Python State-Machine Pattern
-
-## 📂 Project Structure
+## 🛠️ Project Structure
 
 ```text
 ├── app/
-│   ├── agents/          # Central VoiceAgent State Machine
-│   ├── audio/           # Optimized Recorder (VAD) & Player (Non-blocking)
-│   ├── config/          # Environment & Settings
-│   ├── llm/             # Context-aware LLM Client & Prompting
-│   ├── memory/          # Conversational History & Trimming
-│   ├── stt/             # Whisper STT with Language Detection
-│   ├── tts/             # Piper TTS Wrapper
-│   └── utils/           # Structured Logging
-├── data/                # Captured and Generated Audio
-├── models/              # Local weights for Whisper/Piper
-├── requirements.txt     # Python dependencies
-└── run.py               # Application Entry Point
+│   ├── agents/          # VoiceAgent (Intelligence Loop)
+│   ├── audio/           # Recorder (Interrupt-ready) & Player
+│   ├── config/          # Settings & States
+│   ├── llm/             # Interview Prompts & LLM Logic
+│   ├── memory/          # Interview Session Context
+│   ├── stt/             # Whisper STT
+│   └── tts/             # Piper TTS
+├── data/                # Session Audio Data
+├── models/              # Local Model Weights
+├── run.py               # Application Entry Point
 ```
 
 ## ⚙️ Setup & Execution
 
-### 1. Requirements
-- Python 3.9+
-- `ffmpeg` installed and in PATH
-- `piper` binary installed and in PATH (for TTS)
-
-### 2. Installation
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configuration
-Copy `.env.example` (or create `.env`) and add your API keys:
-```env
-OPENAI_API_KEY=sk-...
-LLM_PROVIDER=openai # or 'local'
-WHISPER_MODEL=base
-```
-
-### 4. Running the Agent
-```bash
-python run.py
-```
-
-## 📄 Key Responsibilities
-
-| Component | Responsibility |
-| :--- | :--- |
-| **VoiceAgent** | Orchestrates state transitions, flow decisions, and error recovery. |
-| **ConversationMemory** | Maintains context, injects system prompts, and trims history. |
-| **AudioRecorder** | Monitors microphone energy to detect human speech triggers. |
-| **LLMClient** | Generates speech-optimized responses based on conversational context. |
+1. **Install Dependencies**: `pip install -r requirements.txt`
+2. **Configure Environment**: Add `OPENAI_API_KEY` to your `.env` file.
+3. **Launch Interviewer**: `python run.py`
 
 ---
-*Built for high-performance AI interaction and resume-ready system design.*
+*Built for realistic, high-stakes interview preparation.*
