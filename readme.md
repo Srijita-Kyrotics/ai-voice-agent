@@ -1,88 +1,91 @@
-# Production-Level Modular AI Voice Agent
+# Intelligent Conversational Voice AI Agent
 
-A high-performance, scalable, and modular Speech-to-Speech (S2S) conversational AI agent built in Python. Designed with industry best practices for AI system design.
+A production-grade, state-aware Speech-to-Speech (S2S) AI agent built with a modular, scalable architecture. Unlike basic linear pipelines, this system behaves as a true autonomous agent with state management and conversational intelligence.
 
-## 🧱 Architecture Diagram
+## 🧠 System Architecture
+
+The heart of the system is a **State-Machine Controller** that manages the agent's lifecycle across various states:
 
 ```mermaid
-graph TD
-    User((User)) -->|Speech| Recorder[Audio Recorder]
-    Recorder -->|WAV| STT[Whisper STT]
-    STT -->|Text| Agent[Voice Agent Orchestrator]
-    Agent <-->|Context| Memory[Conversation Memory]
-    Agent -->|History| LLM[LLM Client: GPT / Llama 3]
-    LLM -->|Response| Agent
-    Agent -->|Text| TTS[Piper TTS]
-    TTS -->|WAV| Player[Audio Player]
-    Player -->|Speech| User
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> LISTENING : Audio Energy > Threshold
+    LISTENING --> THINKING : Silence Detected (VAD)
+    THINKING --> SPEAKING : LLM Response Ready
+    SPEAKING --> IDLE : Audio Finished
+    SPEAKING --> INTERRUPTED : User Starts Speaking
+    INTERRUPTED --> LISTENING
+    ERROR --> IDLE : Reset
 ```
 
-## 🚀 Key Features
+## 🚀 Advanced Features
 
-- **Modular Design**: Clean separation of concerns (Audio, STT, LLM, TTS, Memory).
-- **Dual LLM Support**: Switch between OpenAI GPT and Local Llama 3 via config.
-- **Local STT & TTS**: Uses OpenAI Whisper and Piper TTS for offline-first capabilities.
-- **Smart Memory**: Conversational history with sliding window trimming.
-- **Structured Logging**: Comprehensive tracing of the agent's internal state.
-- **Production-Ready**: Scalable architecture designed for easy extension.
+- **State-Based Control**: Explicit management of `IDLE`, `LISTENING`, `THINKING`, and `SPEAKING` cycles.
+- **Intelligent Memory**: Context-aware memory with sliding-window trimming to maintain history without unbounded growth.
+- **Voice Activity Detection (VAD)**: Energy-based detection to automatically start/stop recording.
+- **Multilingual Recognition**: Whisper-based auto-detection of spoken languages.
+- **Interrupt Handling**: (Architecture Ready) Logic to stop AI speech when user voice energy is detected.
+- **Offline First**: Fully local STT (Whisper) and TTS (Piper) for maximum privacy and low latency.
 
 ## 🛠️ Tech Stack
 
-- **Speech-To-Text**: OpenAI Whisper (Local)
-- **Intelligence**: OpenAI GPT-4o / Meta Llama 3 (via local API)
-- **Text-To-Speech**: Piper TTS (Local Neural TTS)
-- **Audio I/O**: SoundDevice, Scipy, NumPy
-- **Orchestration**: Python (Modular Class-based Design)
+- **STT**: OpenAI Whisper (Local, optimized for CUDA/CPU)
+- **LLM**: Multi-provider support (OpenAI GPT-4o / Local Llama 3 via Ollama)
+- **TTS**: Piper (Fast, local Neural Text-to-Speech)
+- **Audio Core**: SoundDevice, SciPy, NumPy
+- **Orchestration**: Python State-Machine Pattern
 
-## 📦 Project Structure
+## 📂 Project Structure
 
 ```text
-voice-ai-agent/
 ├── app/
-│   ├── main.py             # Application entry point
-│   ├── config/             # Environment & settings
-│   ├── audio/              # Microphone & Speaker handlers
-│   ├── stt/                # Speech-to-Text logic
-│   ├── llm/                # Brain & Prompt Management
-│   ├── tts/                # Text-to-Speech generation
-│   ├── memory/             # Historical context management
-│   ├── agents/             # The central Brain (Orchestrator)
-│   └── utils/              # Logging & Helpers
-├── data/                   # Storage for temporary audio files
-├── models/                 # Local model weights (Whisper/Piper)
-├── requirements.txt        # Python dependencies
-└── run.py                  # CLI runner
+│   ├── agents/          # Central VoiceAgent State Machine
+│   ├── audio/           # Optimized Recorder (VAD) & Player (Non-blocking)
+│   ├── config/          # Environment & Settings
+│   ├── llm/             # Context-aware LLM Client & Prompting
+│   ├── memory/          # Conversational History & Trimming
+│   ├── stt/             # Whisper STT with Language Detection
+│   ├── tts/             # Piper TTS Wrapper
+│   └── utils/           # Structured Logging
+├── data/                # Captured and Generated Audio
+├── models/              # Local weights for Whisper/Piper
+├── requirements.txt     # Python dependencies
+└── run.py               # Application Entry Point
 ```
 
-## ⚙️ Setup Instructions
+## ⚙️ Setup & Execution
 
-1. **Install System Dependencies** (Windows/Linux):
-   - Ensure `ffmpeg` and `piper` are installed and in your PATH.
-   - For audio: `pip install pyaudio` (may require VC++ build tools on Windows).
+### 1. Requirements
+- Python 3.9+
+- `ffmpeg` installed and in PATH
+- `piper` binary installed and in PATH (for TTS)
 
-2. **Setup Python Environment**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. Installation
+```bash
+pip install -r requirements.txt
+```
 
-3. **Configure Environment Variables**:
-   Edit the `.env` file and add your `OPENAI_API_KEY`.
+### 3. Configuration
+Copy `.env.example` (or create `.env`) and add your API keys:
+```env
+OPENAI_API_KEY=sk-...
+LLM_PROVIDER=openai # or 'local'
+WHISPER_MODEL=base
+```
 
-4. **Prepare Local Models**:
-   Download Piper ONNX models into the `models/` directory.
-
-## 🏃 How to Run
-
+### 4. Running the Agent
 ```bash
 python run.py
 ```
 
-## 🔮 Future Improvements
+## 📄 Key Responsibilities
 
-- [ ] Web-based Dashboard for real-time monitoring.
-- [ ] Adaptive Bitrate streaming for slower connections.
-- [ ] Multi-user session management via Redis.
-- [ ] Integration with vector databases for RAG-based domain knowledge.
+| Component | Responsibility |
+| :--- | :--- |
+| **VoiceAgent** | Orchestrates state transitions, flow decisions, and error recovery. |
+| **ConversationMemory** | Maintains context, injects system prompts, and trims history. |
+| **AudioRecorder** | Monitors microphone energy to detect human speech triggers. |
+| **LLMClient** | Generates speech-optimized responses based on conversational context. |
 
 ---
-Built with 💜 for Advanced AI Agent Development.
+*Built for high-performance AI interaction and resume-ready system design.*

@@ -1,7 +1,16 @@
 import os
 from dotenv import load_dotenv
+from enum import Enum
 
 load_dotenv()
+
+class AgentState(Enum):
+    IDLE = "IDLE"
+    LISTENING = "LISTENING"
+    THINKING = "THINKING"
+    SPEAKING = "SPEAKING"
+    INTERRUPTED = "INTERRUPTED"
+    ERROR = "ERROR"
 
 class Settings:
     # API Keys
@@ -15,6 +24,12 @@ class Settings:
     WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
     LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
     TTS_MODEL = os.getenv("TTS_MODEL", "en_US-lessac-medium")
+    
+    # Audio Settings
+    SAMPLE_RATE = 16000
+    CHANNELS = 1
+    SILENCE_THRESHOLD = 0.02
+    MAX_SILENCE_DURATION = 1.8 
     
     # Storage
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
