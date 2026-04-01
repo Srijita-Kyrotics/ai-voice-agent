@@ -12,16 +12,24 @@ A modern, high-quality conversational AI agent that takes spoken input and respo
 
 ## Getting Started
 
-1.  Clone or download this repository.
-2.  Open `index.html` in a modern web browser (Chrome, Edge, Safari).
-3.  Click the microphone button to start a conversation.
-    -   *Note: You may need to grant browser permission for the microphone.*
+### Web Version (Premium UI)
+1.  Open `index.html` in a modern web browser.
+2.  Click the microphone button to start.
+
+### Python Version (CLI)
+1.  Install dependencies:
+    ```bash
+    pip install SpeechRecognition gTTS playsound PyAudio
+    ```
+2.  Run the agent:
+    ```bash
+    python main.py
+    ```
 
 ## Project Structure
 
--   `index.html`: Main layout and structural elements.
--   `style.css`: Modern visual design system and animations.
--   `app.js`: Core logic for speech processing and conversation handling.
+-   `index.html`, `style.css`, `app.js`: Web implementation.
+-   `main.py`: Python implementation for CLI/Server use.
 
 ## LLM Integration
 
@@ -51,4 +59,4 @@ async function handleAIResponse(userText) {
 -   Firefox (Experimental support for Web Speech API)
 
 ---
-
+  
