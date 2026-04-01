@@ -1,0 +1,10 @@
+openai
+openai-whisper
+sounddevice
+numpy
+scipy
+python-dotenv
+requests
+pyaudio
+# For Piper TTS, normally you'd use the binary or piper-tts library
+# piper-tts
