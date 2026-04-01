@@ -2,8 +2,8 @@ from app.utils.logger import logger
 from app.config.settings import settings
 
 class ConversationMemory:
-    def __init__(self, system_prompt, max_messages=None):
-        self.max_messages = max_messages or settings.MAX_MEMORY_MESSAGES
+    def __init__(self, system_prompt, max_messages=8):
+        self.max_messages = max_messages
         self.history = []
         self.system_prompt = system_prompt
 
