@@ -1,59 +1,59 @@
-# AI Interview Assistant: Intelligent Voice Agent
+# AI Interview Assistant: Production-Level Intelligent Agent
 
-A specialized, purpose-driven AI agent designed to help professionals practice job interviews through natural voice interaction. Unlike basic voice pipelines, this agent uses a **THINK → DECIDE → ACT** loop to provide a realistic and intelligent mock interview experience.
+This is a specialized, purpose-driven AI agent designed for high-stakes interview preparation. Unlike basic voice assistants that follow a linear "Input -> Process -> Output" pipeline, this agent implements an autonomous **THINK → DECIDE → ACT** loop for truly intelligent behavior.
 
 ## 🎯 Problem Statement
-Preparing for interviews often lacks real-time, bidirectional vocal practice. This agent solves that by acting as a professional interviewer that asks behavioral questions, evaluates responses, and provides immediate feedback.
+Most voice AI tutorials show a simple linear flow: **Record → Transcribe → LLM → Speak**. This creates a fragile, "dumb" system that responds to noise, fails on silence, and lacks conversational nuance.
 
-## 🧠 Agent Architecture (THINK → DECIDE → ACT)
+**This agent solves that by acting as a system-aware interviewer.** It evaluates input quality before processing, decides on the best conversational strategy, and supports real-time interruptions.
 
-This agent moves beyond simple "record and respond" logic by implementing an intelligent decision loop:
+---
 
-1. **THINK**: The agent analyzes transcription for intent, noise, or short inputs (VAD + Heuristics).
-2. **DECIDE**: It chooses a strategy—clarification, deep follow-up, or professional feedback—based on the current interview stage.
-3. **ACT**: It generates a speech-optimized response, synthesizes audio, and updates conversational memory.
+## 🧠 System Architecture (THINK → DECIDE → ACT)
+
+The agent operates on a sophisticated state-machine that prioritizes intelligence over sequential execution:
+
+1. **THINK (Analysis Phase)**:
+   - Analyzes audio energy and transcription quality.
+   - Detects intent: Is the user answering a question, asking for help, or is it just background noise?
+2. **DECIDE (Strategy Phase)**:
+   - Chooses a response strategy: Should I ask a deep follow-up? Should I clarify? Should I ignore this noise?
+   - Applies speech constraints (brevity, tone, natural flow).
+3. **ACT (Execution Phase)**:
+   - Generates the context-aware response.
+   - Synthesizes speech and manages the audio thread.
+   - Monitors for **User Interruptions** during speech to allow natural "cut-ins".
 
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> LISTENING : Energy > Threshold
-    LISTENING --> THINKING : Silence Detected
-    THINKING --> DECIDING : Intent Analysis
-    DECIDING --> SPEAKING : Strategy Selected
-    SPEAKING --> IDLE : Audio Finished
-    SPEAKING --> INTERRUPTED : User Cut-in Detected
+    IDLE --> LISTENING : Audio Detected
+    LISTENING --> THINKING : Analysis Loop
+    THINKING --> DECIDING : Strategy Logic
+    DECIDING --> SPEAKING : Speech Synthesis
+    SPEAKING --> IDLE : Complete
+    SPEAKING --> INTERRUPTED : User Interrupt
     INTERRUPTED --> LISTENING
 ```
 
-## 🚀 Advanced Features
+---
 
-- **Interrupt Handling**: The agent immediately stops speaking if it detects the user trying to speak, allowing for natural conversation flow.
-- **Intelligent VAD**: Energy-based detection filters out background noise and precisely captures speech.
-- **Context-Aware Memory**: Maintains a professional interview context and can provide a summary of the session.
-- **Multilingual Support**: Automatically detects the user's spoken language via Whisper.
-- **Offline First**: All speech-to-text (Whisper) and text-to-speech (Piper) processing is done locally.
+## 🚀 Key Production Features
 
-## 🛠️ Project Structure
-
-```text
-├── app/
-│   ├── agents/          # VoiceAgent (Intelligence Loop)
-│   ├── audio/           # Recorder (Interrupt-ready) & Player
-│   ├── config/          # Settings & States
-│   ├── llm/             # Interview Prompts & LLM Logic
-│   ├── memory/          # Interview Session Context
-│   ├── stt/             # Whisper STT
-│   └── tts/             # Piper TTS
-├── data/                # Session Audio Data
-├── models/              # Local Model Weights
-├── run.py               # Application Entry Point
-```
-
-## ⚙️ Setup & Execution
-
-1. **Install Dependencies**: `pip install -r requirements.txt`
-2. **Configure Environment**: Add `OPENAI_API_KEY` to your `.env` file.
-3. **Launch Interviewer**: `python run.py`
+- **Intelligence Loop**: Explicit `think()` and `decide()` methods for system-level logic.
+- **Interrupt Handling**: High-priority feature that stops AI speech immediately when the user speaks.
+- **Smart Memory**: 8-turn sliding window memory with JSON-structured context.
+- **Production UX**: Real-time console status (`Listening...`, `Thinking...`) and robust error recovery.
+- **Offline First**: Local Whisper (STT) and Piper (TTS) for maximum privacy and low latency.
+- **Role Consistency**: Strictly adheres to the "Professional AI Interviewer" persona via advanced system prompting.
 
 ---
-*Built for realistic, high-stakes interview preparation.*
+
+## ⚙️ Setup & Usage
+
+1. **Environment**: Install `pip install -r requirements.txt`.
+2. **Keys**: Add `OPENAI_API_KEY` to the `.env` file.
+3. **Run**: `python run.py`.
+
+---
+*Built for realistic, high-performance interview practice.*

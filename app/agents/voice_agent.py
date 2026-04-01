@@ -13,7 +13,7 @@ from app.memory.conversation import ConversationMemory
 
 class VoiceAgent:
     def __init__(self):
-        logger.info("--- INITIALIZING INTELLIGENT INTERVIEW ASSISTANT ---")
+        logger.info("--- PRODUCTION AGENT INITIALIZATION ---")
         settings.ensure_dirs()
         
         self.recorder = AudioRecorder()
@@ -32,68 +32,76 @@ class VoiceAgent:
     def transition_to(self, new_state):
         with self._lock:
             if self.state != new_state:
-                logger.info(f"STATUS: {new_state.value}")
                 self.state = new_state
+                # Only log state transitions to file, keep console for UX
 
     def think(self, user_text):
-        """Analyze input and decide approach."""
+        """THINK: Analyze user input for intent and quality."""
         if not user_text or len(user_text.split()) < 2:
-            return "SKIP", "Input too short or silent."
+            return "IGNORE", "Noise or silence detected."
         
-        # Simple heuristic for clarification vs move on
-        if "?" in user_text or "help" in user_text.lower():
-            return "RESPOND_HELP", "User needs assistance."
+        text_lower = user_text.lower()
+        
+        # Detect clear intents
+        if any(word in text_lower for word in ["help", "what", "how", "repeat"]):
+            return "CLARIFY", "User is asking for help or clarification."
             
-        return "RESPOND_INTERVIEW", "Valid interview response."
+        if len(user_text.split()) > 15:
+            return "PROCESS_DETAILED", "User provided a comprehensive answer."
+            
+        return "PROCESS_STANDARD", "Standard conversational input."
 
     def decide(self, thought_action, reason):
-        """Map thought to a concrete action strategy."""
-        logger.info(f"THINK Result: {thought_action} ({reason})")
-        
-        if thought_action == "SKIP":
+        """DECIDE: Choose the best strategy based on the 'thought'."""
+        if thought_action == "IGNORE":
             return None
-        
+            
+        logger.debug(f"Decision Logic: {thought_action} due to '{reason}'")
         return thought_action
 
-    def act(self, action, user_text):
-        """Execute the decided action."""
-        if action is None:
+    def act(self, strategy, user_text):
+        """ACT: Execute the chosen strategy."""
+        if not strategy:
             return
 
-        # Update memory
+        # 1. Update context
         self.memory.add_message("user", user_text)
         
-        # 1. Generate LLM Response
+        # 2. Generate Intelligent Response
         self.transition_to(AgentState.THINKING)
+        print("Thinking...")
+        
         context = self.memory.get_context()
         ai_text = self.llm.generate_response(context)
         
+        # Ensure brevity (as per requirements)
+        if len(ai_text.split()) > 40:
+            ai_text = " ".join(ai_text.split()[:40]) + "."
+
         self.memory.add_message("assistant", ai_text)
 
-        # 2. Synthesize & Speak with Interrupt Support
+        # 3. Speak & Support Interrupts
         self.transition_to(AgentState.SPEAKING)
-        output_wav = self.tts.synthesize(ai_text)
+        wav_path = self.tts.synthesize(ai_text)
         
-        if output_wav:
-            # Play in a thread to allow energy monitoring for interrupts
-            play_thread = threading.Thread(target=self.player.play, args=(output_wav,))
+        if wav_path:
+            play_thread = threading.Thread(target=self.player.play, args=(wav_path,))
             play_thread.start()
             
-            # Monitor for interruptions while playing
+            # Monitor for interrupts
             while play_thread.is_alive():
-                if self.recorder.is_speech_ongoing(duration=0.2):
-                    logger.info("USER INTERRUPTED - Stopping AI speech.")
+                if self.recorder.is_speech_ongoing(duration=0.15):
+                    logger.info("INTERRUPT: Stopping AI playback.")
                     self.player.stop()
-                    self.transition_to(AgentState.INTERRUPTED)
                     break
-                time.sleep(0.1)
-            
+                time.sleep(0.05)
             play_thread.join()
 
     def handle_cycle(self):
         try:
             # LISTEN
             self.transition_to(AgentState.LISTENING)
+            print("Listening...")
             audio_data = self.recorder.listen_and_record()
             
             if audio_data is None:
@@ -105,34 +113,40 @@ class VoiceAgent:
             user_text = self.stt.transcribe(audio_path)
 
             # THINK-DECIDE-ACT
-            action, reason = self.think(user_text)
-            strategy = self.decide(action, reason)
+            thought, reason = self.think(user_text)
+            strategy = self.decide(thought, reason)
             self.act(strategy, user_text)
             
             self.transition_to(AgentState.IDLE)
 
         except Exception as e:
-            logger.error(f"Agent Loop Error: {e}")
+            logger.error(f"Production Loop Error: {e}")
+            print(f"Error: {e}")
             self.transition_to(AgentState.ERROR)
-            time.sleep(2)
+            time.sleep(1)
             self.transition_to(AgentState.IDLE)
 
     def run(self):
         self.running = True
-        print("\n--- AI INTERVIEW ASSISTANT ONLINE ---")
-        print("I will ask you interview questions. Speak clearly into the microphone.\n")
+        print("\n" + "="*40)
+        print("  AI INTERVIEW ASSISTANT: ONLINE")
+        print("="*40)
+        print("Status: Ready to help with your mock interview.")
         
         try:
-            # Initial prompt/introduction
-            intro = "Hello! I am your AI Interview Assistant. Are you ready to start the mock interview?"
-            self.memory.add_message("assistant", intro)
-            wav_path = self.tts.synthesize(intro)
-            if wav_path: self.player.play(wav_path)
+            # Initial Greeting
+            intro = "Welcome! I'm your AI Interview Assistant. Shall we begin your mock interview?"
+            wav = self.tts.synthesize(intro)
+            if wav: self.player.play(wav)
             
             while self.running:
                 self.handle_cycle()
         except KeyboardInterrupt:
             self.running = False
+        except Exception as e:
+            logger.critical(f"System Failure: {e}")
         finally:
             self.player.stop()
-            print("\nInterview session ended. Good luck!")
+            print("\n" + "="*40)
+            print("  SYSTEM SHUTDOWN: GOODBYE")
+            print("="*40)
