@@ -6,10 +6,10 @@ from app.config.settings import settings, AgentState
 from app.audio.recorder import AudioRecorder
 from app.audio.player import AudioPlayer
 from app.stt.whisper_stt import WhisperSTT
-from app.llm.llm_client import LLMClient
+from app.llm.llm_client import Model
 from app.llm.prompt_manager import PromptManager
 from app.tts.piper_tts import PiperTTS
-from app.memory.conversation import ConversationMemory
+from app.memory.conversation import Memory
 from app.agents.base_agent import BaseAgent
 
 class VoiceAgent(BaseAgent):
@@ -20,13 +20,11 @@ class VoiceAgent(BaseAgent):
         self.recorder = AudioRecorder()
         self.player = AudioPlayer()
         self.stt = WhisperSTT()
-        self.llm = LLMClient()
+        self.model = Model()
         self.tts = PiperTTS()
         
         self.state = AgentState.IDLE
-        self.memory = ConversationMemory(
-            system_prompt=PromptManager.get_voice_assistant_prompt()
-        )
+        self.memory = Memory()
         self._lock = threading.Lock()
 
     def transition_to(self, new_state):
@@ -68,10 +66,8 @@ class VoiceAgent(BaseAgent):
         self.transition_to(AgentState.THINKING)
         
         # Temp add to memory for context generation
-        self.memory.add_message("user", text)
-        context = self.memory.get_context()
-        
-        ai_text = self.llm.generate_response(context)
+        self.memory.add("user", text)
+        ai_text = self.model.generate(messages=self.memory.get_context())
         
         # Ensure brevity
         if len(ai_text.split()) > 45:
@@ -102,5 +98,5 @@ class VoiceAgent(BaseAgent):
         """Update the conversation memory with the interaction."""
         # User message was added in generate_response for context. 
         # Now add assistant message.
-        self.memory.add_message("assistant", response)
+        self.memory.add("assistant", response)
         self.transition_to(AgentState.IDLE)
